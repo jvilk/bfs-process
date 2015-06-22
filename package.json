@@ -1,0 +1,22 @@
+{
+  "name": "bfs-process",
+  "version": "0.0.1",
+  "description": "An emulation of Node's process module. Used in BrowserFS.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jvilk/bfs-process.git"
+  },
+  "author": "John Vilk <jvilk@cs.umass.edu>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/jvilk/bfs-process/issues"
+  },
+  "peerDependencies": {
+    "browserfs": "~0.4"
+  },
+  "homepage": "https://github.com/jvilk/bfs-process#readme"
+}
