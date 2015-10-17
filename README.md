@@ -1,7 +1,4 @@
-# BrowserFS Process
+# BrowserFS Process v0.1.0
+> An emulation of NodeJS's `process` variable. Used in [BrowserFS](https://github.com/jvilk/BrowserFS).
 
-An emulation of NodeJS's `process` variable. Used in [BrowserFS](https://github.com/jvilk/BrowserFS).
-
-Currently, this repository is a simple wrapper around functionality provided in the monolithic BrowserFS library.
-
-In the future, the actual source code of BrowserFS's `process` implementation will be moved here.
+Provides only basic `process` functionality, such as changing directories and `stdout`/`stdin`/`stderr` emulation.

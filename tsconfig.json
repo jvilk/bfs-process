@@ -1,0 +1,16 @@
+{
+    "compilerOptions": {
+        "module": "commonjs",
+        "target": "ES3",
+        "declaration": true,
+        "sourceMap": true,
+        "noImplicitAny": true,
+        "outDir": "js"
+    },
+    "files": [
+        "typings/tsd.d.ts",
+        "ts/process.ts",
+        "ts/tty.ts",
+        "ts/index.ts"
+    ]
+}
