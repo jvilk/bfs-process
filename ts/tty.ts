@@ -5,6 +5,7 @@ class TTY extends stream.Duplex {
   public columns: number = 80;
   public rows: number = 120;
   public isTTY: boolean = true;
+  private _bufferedWrites: Buffer[] = [];
 
   constructor() {
     super();
@@ -49,6 +50,34 @@ class TTY extends stream.Duplex {
    */
   public static isatty(fd: any): fd is TTY {
     return fd && fd instanceof TTY;
+  }
+
+  public _write(chunk: any, encoding: string, cb: Function): void {
+    var error: any;
+    try {
+      var data: Buffer;
+      if (typeof(chunk) === 'string') {
+        data = new Buffer(chunk, encoding);
+      } else {
+        data = chunk;
+      }
+      this._bufferedWrites.push(data);
+    } catch (e) {
+      error = e;
+    } finally {
+      cb(error);
+    }
+  }
+
+  public _read(size: number): void {
+    // Size is advisory -- we can ignore it.
+    var i: number;
+    for (i = 0; i < this._bufferedWrites.length; i++) {
+      if (!this.push(this._bufferedWrites[i])) {
+        break;
+      }
+    }
+    this._bufferedWrites = this._bufferedWrites.slice(i + 1);
   }
 }
 
