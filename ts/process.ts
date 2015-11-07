@@ -1,5 +1,6 @@
 import _path = require('path');
 import TTY = require('./tty');
+import events = require('events');
 
 // Path depends on process. Avoid a circular reference by dynamically including path when we need it.
 var path: typeof _path = null;
@@ -78,7 +79,7 @@ class NextTickQueue {
  * @see http://nodejs.org/api/process.html
  * @class
  */
-class Process {
+class Process extends events.EventEmitter implements NodeJS.Process {
   private startTime = Date.now();
 
   private _cwd: string = '/';
@@ -131,6 +132,120 @@ class Process {
 
   public nextTick(fun: any, ...args: any[]) {
     this._queue.push(new Item(fun, args));
+  }
+
+  public execPath = __dirname;
+
+  public abort(): void {
+    this.emit('abort');
+  }
+
+  public env: {[name: string]: string} = {};
+  public exitCode: number = 0;
+  public exit(code: number): void {
+    this.exitCode = code;
+    this.emit('exit', [code]);
+  }
+
+  private _gid: number = 1;
+  public getgid(): number {
+    return this._gid;
+  }
+  public setgid(gid: number | string): void {
+    if (typeof gid === 'number') {
+      this._gid = gid;
+    } else {
+      this._gid = 1;
+    }
+  }
+
+  private _uid: number = 1;
+  public getuid(): number {
+    return this._uid;
+  }
+  public setuid(uid: number | string): void {
+    if (typeof uid === 'number') {
+      this._uid = uid;
+    } else {
+      this._uid = 1;
+    }
+  }
+
+  public version: string = 'v5.0';
+
+  public versions = {
+    http_parser: '0.0',
+    node: '5.0',
+    v8: '0.0',
+    uv: '0.0',
+    zlib: '0.0',
+    ares: '0.0',
+    icu: '0.0',
+    modules: '0',
+    openssl: '0.0'
+  };
+
+  public config = {
+    target_defaults:
+    { cflags: <any[]> [],
+      default_configuration: 'Release',
+      defines: <string[]> [],
+      include_dirs: <string[]> [],
+      libraries: <string[]> [] },
+    variables:
+    { clang: 0,
+      host_arch: 'x32',
+      node_install_npm: false,
+      node_install_waf: false,
+      node_prefix: '',
+      node_shared_cares: false,
+      node_shared_http_parser: false,
+      node_shared_libuv: false,
+      node_shared_zlib: false,
+      node_shared_v8: false,
+      node_use_dtrace: false,
+      node_use_etw: false,
+      node_use_openssl: false,
+      node_shared_openssl: false,
+      strict_aliasing: false,
+      target_arch: 'x32',
+      v8_use_snapshot: false,
+      v8_no_strict_aliasing: 0,
+      visibility: '' } };
+
+  public kill(pid: number, signal?: string): void {
+    this.emit('kill', [pid, signal]);
+  }
+
+  public pid = (Math.random()*1000)|0;
+
+  public title = 'node';
+  public arch = 'x32';
+  public memoryUsage(): {rss: number; heapTotal: number; heapUsed: number;} {
+    return { rss: 0, heapTotal: 0, heapUsed: 0 }
+  }
+
+  private _mask = 18;
+  public umask(mask: number = this._mask): number {
+    let oldMask = this._mask;
+    this._mask = mask;
+    this.emit('umask', [mask]);
+    return oldMask;
+  }
+
+  public hrtime(): [number, number] {
+    let timeinfo: number;
+    if (typeof performance !== 'undefined') {
+      timeinfo = performance.now();
+    } else if (Date['now']) {
+      timeinfo = Date.now();
+    } else {
+      timeinfo = (new Date()).getTime();
+    }
+    let secs = (timeinfo / 1000)|0;
+    timeinfo -= secs * 1000;
+    timeinfo = (timeinfo * 1000000)|0;
+    return [secs, timeinfo];
   }
 }
 
