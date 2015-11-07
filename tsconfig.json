@@ -3,7 +3,8 @@
         "module": "commonjs",
         "target": "ES3",
         "declaration": true,
-        "sourceMap": true,
+        "inlineSourceMap": true,
+        "inlineSources": true,
         "noImplicitAny": true,
         "outDir": "js"
     },
