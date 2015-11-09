@@ -9,7 +9,7 @@ function defineKey(key: string) {
     // Probably a builtin Object property we don't care about.
     return;
   }
-  if (typeof (<any> process)[key] === 'Function') {
+  if (typeof (<any> process)[key] === 'function') {
     (<any> processProxy)[key] = function() {
       return (<Function> (<any> process)[key]).apply(process, arguments);
     };
