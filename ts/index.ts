@@ -24,4 +24,18 @@ for (var key in process) {
   defineKey(key);
 }
 
+// Special key: Ensure we update public-facing values of stdin/stdout/stderr.
+processProxy.initializeTTYs = function() {
+  if (process.stdin === null) {
+    process.initializeTTYs();
+    processProxy.stdin = process.stdin;
+    processProxy.stdout = process.stdout;
+    processProxy.stderr = process.stderr;
+  }
+};
+
+process.nextTick(() => {
+  processProxy.initializeTTYs();
+});
+
 export = processProxy;

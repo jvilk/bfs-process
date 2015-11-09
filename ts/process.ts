@@ -1,5 +1,9 @@
+// Use path and TTY for type information only. We lazily pull them in
+// to avoid circular dependencies :(
+// (path depends on process for cwd(), TTY depends on streams which depends
+//  on process.nextTick/process.stdout/stderr/stdin).
 import _path = require('path');
-import TTY = require('./tty');
+import _TTY = require('./tty');
 import events = require('events');
 
 // Path depends on process. Avoid a circular reference by dynamically including path when we need it.
@@ -124,9 +128,9 @@ class Process extends events.EventEmitter implements NodeJS.Process {
   }
 
   public argv: string[] = [];
-  public stdout = new TTY();
-  public stderr = new TTY();
-  public stdin = new TTY();
+  public stdout: _TTY = null;
+  public stderr: _TTY = null;
+  public stdin: _TTY = null;
 
   private _queue: NextTickQueue = new NextTickQueue();
 
@@ -246,6 +250,19 @@ class Process extends events.EventEmitter implements NodeJS.Process {
     timeinfo -= secs * 1000;
     timeinfo = (timeinfo * 1000000)|0;
     return [secs, timeinfo];
+  }
+
+  /**
+   * [BFS only] Initialize the TTY devices.
+   */
+  public initializeTTYs(): void {
+    // Guard against multiple invocations.
+    if (this.stdout === null) {
+      let TTY: typeof _TTY = require('./tty');
+      this.stdout = new TTY();
+      this.stderr = new TTY();
+      this.stdin = new TTY();
+    }
   }
 }
 
