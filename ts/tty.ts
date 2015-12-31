@@ -6,6 +6,7 @@ class TTY extends stream.Duplex {
   public rows: number = 120;
   public isTTY: boolean = true;
   private _bufferedWrites: Buffer[] = [];
+  private _waitingForWrites: boolean = false;
 
   constructor() {
     super();
@@ -62,6 +63,9 @@ class TTY extends stream.Duplex {
         data = chunk;
       }
       this._bufferedWrites.push(data);
+      if (this._waitingForWrites) {
+        this._read(1024);
+      }
     } catch (e) {
       error = e;
     } finally {
@@ -71,13 +75,16 @@ class TTY extends stream.Duplex {
 
   public _read(size: number): void {
     // Size is advisory -- we can ignore it.
-    var i: number;
-    for (i = 0; i < this._bufferedWrites.length; i++) {
-      if (!this.push(this._bufferedWrites[i])) {
-        break;
+    if (this._bufferedWrites.length === 0) {
+      this._waitingForWrites = true;
+    } else {
+      while (this._bufferedWrites.length > 0) {
+        this._waitingForWrites = this.push(this._bufferedWrites.shift());
+        if (!this._waitingForWrites) {
+          break;
+        }
       }
     }
-    this._bufferedWrites = this._bufferedWrites.slice(i + 1);
   }
 }
 
