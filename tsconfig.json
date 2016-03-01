@@ -9,7 +9,7 @@
         "outDir": "js"
     },
     "files": [
-        "typings/tsd.d.ts",
+        "typings/main.d.ts",
         "ts/process.ts",
         "ts/tty.ts",
         "ts/index.ts"

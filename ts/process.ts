@@ -128,9 +128,11 @@ class Process extends events.EventEmitter implements NodeJS.Process {
   }
 
   public argv: string[] = [];
+  public execArgv: string[] = [];
   public stdout: _TTY = null;
   public stderr: _TTY = null;
   public stdin: _TTY = null;
+  public domain: NodeJS.Domain = null;
 
   private _queue: NextTickQueue = new NextTickQueue();
 
@@ -264,6 +266,15 @@ class Process extends events.EventEmitter implements NodeJS.Process {
       this.stdin = new TTY();
     }
   }
+
+  /**
+   * Worker-only function; irrelevant here.
+   */
+  public disconnect(): void {
+
+  }
+  // Undefined in main thread. Worker-only.
+  public connected: boolean = undefined;
 }
 
 export = Process;
