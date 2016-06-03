@@ -1,41 +1,39 @@
-import Process = require('./process');
-import TTD = require('./tty');
+import Process from './process';
+import TTY from './tty';
 
-var process = new Process(),
-  processProxy: Process = <any> {};
+const process = new Process();
 
-function defineKey(key: string) {
-  if ((<any> processProxy)[key]) {
-    // Probably a builtin Object property we don't care about.
-    return;
-  }
-  if (typeof (<any> process)[key] === 'function') {
-    (<any> processProxy)[key] = function() {
-      return (<Function> (<any> process)[key]).apply(process, arguments);
-    };
-  } else {
-    (<any> processProxy)[key] = (<any> process)[key];
-  }
-}
+export let chdir = process.chdir.bind(process);
+export let cwd = process.cwd.bind(process);
+export let platform = process.platform;
+export let uptime = process.uptime.bind(process);
+export let argv = process.argv;
+export let execArgv = process.execArgv;
+export let stdout = process.stdout;
+export let stderr = process.stderr;
+export let stdin = process.stdin;
+export let domain = process.domain;
+export let nextTick = process.nextTick.bind(process);
+export let execPath = process.execPath;
+export let abort = process.abort.bind(process);
+export let env = process.env;
+export let exitCode = process.exitCode;
+export let exit = process.exit.bind(process);
+export let getgid = process.getgid.bind(process);
+export let setgid = process.setgid.bind(process);
+export let getuid = process.getuid.bind(process);
+export let setuid = process.setuid.bind(process);
+export let version = process.version;
+export let versions = process.versions;
+export let config = process.config;
+export let kill = process.kill.bind(process);
+export let pid = process.pid;
+export let title = process.title;
+export let arch = process.arch;
+export let memoryUsage = process.memoryUsage.bind(process);
+export let umask = process.umask.bind(process);
+export let hrtime = process.hrtime.bind(process);
+export let initializeTTYs = process.initializeTTYs.bind(process);
+export let disconnect = process.disconnect.bind(process);
+export let connected = process.connected;
 
-for (var key in process) {
-  // Don't check if process.hasOwnProperty; we want to also expose objects
-  // up the prototype hierarchy.
-  defineKey(key);
-}
-
-// Special key: Ensure we update public-facing values of stdin/stdout/stderr.
-processProxy.initializeTTYs = function() {
-  if (process.stdin === null) {
-    process.initializeTTYs();
-    processProxy.stdin = process.stdin;
-    processProxy.stdout = process.stdout;
-    processProxy.stderr = process.stderr;
-  }
-};
-
-process.nextTick(() => {
-  processProxy.initializeTTYs();
-});
-
-export = processProxy;

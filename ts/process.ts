@@ -2,12 +2,9 @@
 // to avoid circular dependencies :(
 // (path depends on process for cwd(), TTY depends on streams which depends
 //  on process.nextTick/process.stdout/stderr/stdin).
-import _path = require('path');
-import _TTY = require('./tty');
-import events = require('events');
-
-// Path depends on process. Avoid a circular reference by dynamically including path when we need it.
-var path: typeof _path = null;
+import {resolve} from 'path';
+import TTY from './tty';
+import * as events from 'events';
 
 class Item {
   private fun: Function;
@@ -83,7 +80,7 @@ class NextTickQueue {
  * @see http://nodejs.org/api/process.html
  * @class
  */
-class Process extends events.EventEmitter implements NodeJS.Process {
+export default class Process extends events.EventEmitter implements NodeJS.Process {
   private startTime = Date.now();
 
   private _cwd: string = '/';
@@ -99,11 +96,7 @@ class Process extends events.EventEmitter implements NodeJS.Process {
    * @param [String] dir The directory to change to.
    */
   public chdir(dir: string): void {
-    // XXX: Circular dependency hack.
-    if (path === null) {
-      path = require('path');
-    }
-    this._cwd = path.resolve(dir);
+    this._cwd = resolve(dir);
   }
   /**
    * Returns the current working directory.
@@ -129,9 +122,9 @@ class Process extends events.EventEmitter implements NodeJS.Process {
 
   public argv: string[] = [];
   public execArgv: string[] = [];
-  public stdout: _TTY = null;
-  public stderr: _TTY = null;
-  public stdin: _TTY = null;
+  public stdout: TTY = new TTY();
+  public stderr: TTY = new TTY();
+  public stdin: TTY = new TTY();
   public domain: NodeJS.Domain = null;
 
   private _queue: NextTickQueue = new NextTickQueue();
@@ -258,13 +251,7 @@ class Process extends events.EventEmitter implements NodeJS.Process {
    * [BFS only] Initialize the TTY devices.
    */
   public initializeTTYs(): void {
-    // Guard against multiple invocations.
-    if (this.stdout === null) {
-      let TTY: typeof _TTY = require('./tty');
-      this.stdout = new TTY();
-      this.stderr = new TTY();
-      this.stdin = new TTY();
-    }
+    console.log(`WARNING: process.initializeTTYs() is deprecated and will be removed in the next major version. It is no longer needed; TTY objects will properly initialize now.`);
   }
 
   /**
@@ -276,5 +263,3 @@ class Process extends events.EventEmitter implements NodeJS.Process {
   // Undefined in main thread. Worker-only.
   public connected: boolean = undefined;
 }
-
-export = Process;
