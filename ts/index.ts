@@ -36,4 +36,39 @@ export let hrtime = process.hrtime.bind(process);
 export let initializeTTYs = process.initializeTTYs.bind(process);
 export let disconnect = process.disconnect.bind(process);
 export let connected = process.connected;
+export default {
+  chdir,
+  cwd,
+  platform,
+  uptime,
+  argv,
+  execArgv,
+  stdout,
+  stderr,
+  stdin,
+  domain,
+  nextTick,
+  execPath,
+  abort,
+  env,
+  exitCode,
+  exit,
+  getgid,
+  setgid,
+  getuid,
+  setuid,
+  version,
+  versions,
+  config,
+  kill,
+  pid,
+  title,
+  arch,
+  memoryUsage,
+  umask,
+  hrtime,
+  initializeTTYs,
+  disconnect,
+  connected
+};
 
