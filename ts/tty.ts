@@ -1,10 +1,10 @@
-import stream = require('stream');
+import {Duplex} from 'stream';
 
-class TTY extends stream.Duplex {
+export default class TTY extends Duplex {
   public isRaw: boolean = false;
   public columns: number = 80;
   public rows: number = 120;
-  public isTTY: boolean = true;
+  public isTTY: true = true;
   private _bufferedWrites: Buffer[] = [];
   private _waitingForWrites: boolean = false;
 
@@ -87,5 +87,3 @@ class TTY extends stream.Duplex {
     }
   }
 }
-
-export = TTY;

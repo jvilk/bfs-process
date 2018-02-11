@@ -2,12 +2,17 @@
 // to avoid circular dependencies :(
 // (path depends on process for cwd(), TTY depends on streams which depends
 //  on process.nextTick/process.stdout/stderr/stdin).
-import _path = require('path');
-import _TTY = require('./tty');
-import events = require('events');
+import {resolve} from 'path';
+import TTY from './tty';
+import {EventEmitter} from 'events';
 
-// Path depends on process. Avoid a circular reference by dynamically including path when we need it.
-var path: typeof _path = null;
+function getStack(): string {
+  try {
+    throw new Error();
+  } catch (e) {
+    return e.stack;
+  }
+}
 
 class Item {
   private fun: Function;
@@ -83,7 +88,7 @@ class NextTickQueue {
  * @see http://nodejs.org/api/process.html
  * @class
  */
-class Process extends events.EventEmitter implements NodeJS.Process {
+export default class Process extends EventEmitter {
   private startTime = Date.now();
 
   private _cwd: string = '/';
@@ -99,11 +104,7 @@ class Process extends events.EventEmitter implements NodeJS.Process {
    * @param [String] dir The directory to change to.
    */
   public chdir(dir: string): void {
-    // XXX: Circular dependency hack.
-    if (path === null) {
-      path = require('path');
-    }
-    this._cwd = path.resolve(dir);
+    this._cwd = resolve(dir);
   }
   /**
    * Returns the current working directory.
@@ -118,7 +119,7 @@ class Process extends events.EventEmitter implements NodeJS.Process {
    * Returns what platform you are running on.
    * @return [String]
    */
-  public platform: string = 'browser';
+  public platform: any = 'browser';
   /**
    * Number of seconds BrowserFS has been running.
    * @return [Number]
@@ -128,10 +129,13 @@ class Process extends events.EventEmitter implements NodeJS.Process {
   }
 
   public argv: string[] = [];
+  public get argv0(): string {
+    return this.argv.length > 0 ? this.argv[0] : 'node';
+  }
   public execArgv: string[] = [];
-  public stdout: _TTY = null;
-  public stderr: _TTY = null;
-  public stdin: _TTY = null;
+  public stdout: TTY = new TTY();
+  public stderr: TTY = new TTY();
+  public stdin: TTY = new TTY();
   public domain: NodeJS.Domain = null;
 
   private _queue: NextTickQueue = new NextTickQueue();
@@ -148,14 +152,18 @@ class Process extends events.EventEmitter implements NodeJS.Process {
 
   public env: {[name: string]: string} = {};
   public exitCode: number = 0;
-  public exit(code: number): void {
+  public exit(code: number): never {
     this.exitCode = code;
     this.emit('exit', [code]);
+    throw new Error(`process.exit() called.`);
   }
 
   private _gid: number = 1;
   public getgid(): number {
     return this._gid;
+  }
+  public getegid(): number {
+    return this.getgid();
   }
   public setgid(gid: number | string): void {
     if (typeof gid === 'number') {
@@ -163,6 +171,30 @@ class Process extends events.EventEmitter implements NodeJS.Process {
     } else {
       this._gid = 1;
     }
+  }
+  public setegid(gid: number | string): void {
+    return this.setgid(gid);
+  }
+
+  public getgroups(): number[] {
+    return [];
+  }
+  public setgroups(groups: number[]): void {
+    // NOP
+  }
+
+  private _errorCallback: any = null;
+  public setUncaughtExceptionCaptureCallback(cb: any): void {
+    if (this._errorCallback) {
+      window.removeEventListener('error', this._errorCallback);
+    }
+    this._errorCallback = cb;
+    if (cb) {
+      window.addEventListener('error', cb);
+    }
+  }
+  public hasUncaughtExceptionCaptureCallback(): boolean {
+    return this._errorCallback !== null;
   }
 
   private _uid: number = 1;
@@ -175,6 +207,16 @@ class Process extends events.EventEmitter implements NodeJS.Process {
     } else {
       this._uid = 1;
     }
+  }
+  public geteuid(): number {
+    return this.getuid();
+  }
+  public seteuid(euid: number | string): void {
+    this.setuid(euid);
+  }
+
+  public cpuUsage() {
+    return { user: 0, system: 0 };
   }
 
   public version: string = 'v5.0';
@@ -224,6 +266,7 @@ class Process extends events.EventEmitter implements NodeJS.Process {
   }
 
   public pid = (Math.random()*1000)|0;
+  public ppid = (Math.random()*1000)|0;
 
   public title = 'node';
   public arch = 'x32';
@@ -254,27 +297,20 @@ class Process extends events.EventEmitter implements NodeJS.Process {
     return [secs, timeinfo];
   }
 
-  /**
-   * [BFS only] Initialize the TTY devices.
-   */
-  public initializeTTYs(): void {
-    // Guard against multiple invocations.
-    if (this.stdout === null) {
-      let TTY: typeof _TTY = require('./tty');
-      this.stdout = new TTY();
-      this.stderr = new TTY();
-      this.stdin = new TTY();
-    }
+  public openStdin() {
+    return this.stdin;
   }
 
-  /**
-   * Worker-only function; irrelevant here.
-   */
-  public disconnect(): void {
-
+  public emitWarning(warning: string | Error, name?: string, ctor?: Function): void {
+    const warningObj = {
+      name: name ? name : typeof(warning) !== 'string' ? warning.name : 'Warning',
+      message: typeof(warning) === 'string' ? warning : warning.message,
+      code: 'WARNING',
+      stack: typeof(warning) !== 'string' ? warning.stack : getStack()
+    };
+    this.emit('warning', warningObj);
   }
-  // Undefined in main thread. Worker-only.
-  public connected: boolean = undefined;
+
+  public disconnect(): void {}
+  public connected: boolean = true;
 }
-
-export = Process;
