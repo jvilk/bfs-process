@@ -1,12 +1,12 @@
 {
   "name": "bfs-process",
-  "version": "0.1.6",
+  "version": "1.0.0",
   "description": "An emulation of Node's process module. Used in BrowserFS.",
   "main": "js/cjs/index.js",
-  "jsnext:main": "js/es6/index.js",
-  "typings": "js/cjs/index",
+  "module": "js/es6/index.js",
+  "typings": "js/es6/index",
   "scripts": {
-    "prepublish": "node prepublish.js"
+    "prepare": "tsc && tsc -p tsconfig.es6.json"
   },
   "repository": {
     "type": "git",
@@ -19,6 +19,7 @@
   },
   "homepage": "https://github.com/jvilk/bfs-process#readme",
   "devDependencies": {
-    "typescript": "^1.8"
+    "typescript": "~2.7",
+    "@types/node": "^9.4.5"
   }
 }

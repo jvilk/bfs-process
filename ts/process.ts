@@ -4,7 +4,15 @@
 //  on process.nextTick/process.stdout/stderr/stdin).
 import {resolve} from 'path';
 import TTY from './tty';
-import * as events from 'events';
+import {EventEmitter} from 'events';
+
+function getStack(): string {
+  try {
+    throw new Error();
+  } catch (e) {
+    return e.stack;
+  }
+}
 
 class Item {
   private fun: Function;
@@ -80,7 +88,7 @@ class NextTickQueue {
  * @see http://nodejs.org/api/process.html
  * @class
  */
-export default class Process extends events.EventEmitter implements NodeJS.Process {
+export default class Process extends EventEmitter {
   private startTime = Date.now();
 
   private _cwd: string = '/';
@@ -111,7 +119,7 @@ export default class Process extends events.EventEmitter implements NodeJS.Proce
    * Returns what platform you are running on.
    * @return [String]
    */
-  public platform: string = 'browser';
+  public platform: any = 'browser';
   /**
    * Number of seconds BrowserFS has been running.
    * @return [Number]
@@ -121,6 +129,9 @@ export default class Process extends events.EventEmitter implements NodeJS.Proce
   }
 
   public argv: string[] = [];
+  public get argv0(): string {
+    return this.argv.length > 0 ? this.argv[0] : 'node';
+  }
   public execArgv: string[] = [];
   public stdout: TTY = new TTY();
   public stderr: TTY = new TTY();
@@ -141,14 +152,18 @@ export default class Process extends events.EventEmitter implements NodeJS.Proce
 
   public env: {[name: string]: string} = {};
   public exitCode: number = 0;
-  public exit(code: number): void {
+  public exit(code: number): never {
     this.exitCode = code;
     this.emit('exit', [code]);
+    throw new Error(`process.exit() called.`);
   }
 
   private _gid: number = 1;
   public getgid(): number {
     return this._gid;
+  }
+  public getegid(): number {
+    return this.getgid();
   }
   public setgid(gid: number | string): void {
     if (typeof gid === 'number') {
@@ -156,6 +171,30 @@ export default class Process extends events.EventEmitter implements NodeJS.Proce
     } else {
       this._gid = 1;
     }
+  }
+  public setegid(gid: number | string): void {
+    return this.setgid(gid);
+  }
+
+  public getgroups(): number[] {
+    return [];
+  }
+  public setgroups(groups: number[]): void {
+    // NOP
+  }
+
+  private _errorCallback: any = null;
+  public setUncaughtExceptionCaptureCallback(cb: any): void {
+    if (this._errorCallback) {
+      window.removeEventListener('error', this._errorCallback);
+    }
+    this._errorCallback = cb;
+    if (cb) {
+      window.addEventListener('error', cb);
+    }
+  }
+  public hasUncaughtExceptionCaptureCallback(): boolean {
+    return this._errorCallback !== null;
   }
 
   private _uid: number = 1;
@@ -168,6 +207,16 @@ export default class Process extends events.EventEmitter implements NodeJS.Proce
     } else {
       this._uid = 1;
     }
+  }
+  public geteuid(): number {
+    return this.getuid();
+  }
+  public seteuid(euid: number | string): void {
+    this.setuid(euid);
+  }
+
+  public cpuUsage() {
+    return { user: 0, system: 0 };
   }
 
   public version: string = 'v5.0';
@@ -217,6 +266,7 @@ export default class Process extends events.EventEmitter implements NodeJS.Proce
   }
 
   public pid = (Math.random()*1000)|0;
+  public ppid = (Math.random()*1000)|0;
 
   public title = 'node';
   public arch = 'x32';
@@ -247,19 +297,20 @@ export default class Process extends events.EventEmitter implements NodeJS.Proce
     return [secs, timeinfo];
   }
 
-  /**
-   * [BFS only] Initialize the TTY devices.
-   */
-  public initializeTTYs(): void {
-    console.log(`WARNING: process.initializeTTYs() is deprecated and will be removed in the next major version. It is no longer needed; TTY objects will properly initialize now.`);
+  public openStdin() {
+    return this.stdin;
   }
 
-  /**
-   * Worker-only function; irrelevant here.
-   */
-  public disconnect(): void {
-
+  public emitWarning(warning: string | Error, name?: string, ctor?: Function): void {
+    const warningObj = {
+      name: name ? name : typeof(warning) !== 'string' ? warning.name : 'Warning',
+      message: typeof(warning) === 'string' ? warning : warning.message,
+      code: 'WARNING',
+      stack: typeof(warning) !== 'string' ? warning.stack : getStack()
+    };
+    this.emit('warning', warningObj);
   }
-  // Undefined in main thread. Worker-only.
-  public connected: boolean = undefined;
+
+  public disconnect(): void {}
+  public connected: boolean = true;
 }
